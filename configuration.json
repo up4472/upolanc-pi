@@ -1,0 +1,62 @@
+{
+	"debug" : false,
+
+	"countdown" : 15,
+	"run_capture" : 2,
+	"run_filters" : 0,
+
+	"camera" : {
+		"width" : 1280,
+		"height" : 960,
+		"framerate" : 30,
+		"iso" : 1600,
+		"rotation" : 180,
+		"preview" : {
+			"enable" : false,
+			"fullscreen" : false,
+			"x" : 1495,
+			"y" : 25,
+			"width" : 400,
+			"height" : 400
+		}
+	},
+
+	"window" : {
+		"title" : "Raspberry PI - 15 Seconds of Fame",
+		"width" : 1600,
+		"height" : 900,
+		"font-family" : "Consolas",
+		"font-size" : 32,
+		"fullscreen" : false,
+		"mode" : 2
+	},
+
+	"detector" : {
+		"model" : "haar",
+		"haar_location" : "haarcascade_frontalface_default.xml",
+		"yolo_location" : "",
+		"preview" : {
+			"x" : 25,
+			"y" : 25,
+			"width" : 400,
+			"height" : 400
+		}
+	},
+
+	"selector" : {
+		"method" : "distance_weighted",
+		"bbox_distance" : 15,
+		"bbox_resize" : 2
+	},
+
+	"filter" : {
+		"method" : "random",
+		"recolor_probability" : 0.5
+	},
+
+	"api" : {
+		"caption" : "This tweet was created automaticaly as part of the Raspberry Pi port of the project '15 seconds of fame'.",
+		"verify" : true,
+		"enable" : false
+	}
+}
