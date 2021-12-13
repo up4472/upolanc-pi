@@ -1,5 +1,6 @@
 import numpy
 import copy
+import time
 import cv2
 import os
 
@@ -34,7 +35,9 @@ def display_bbox (image : numpy.ndarray, bounding_box : list, location : list) -
 	cv2.imshow(winname, image)
 	cv2.resizeWindow(winname, wloc, hloc)
 
-	cv2.waitKey()
+	cv2.waitKey(1)
+
+	cv2.destroyWindow(winname)
 
 #
 # Destroy all cv2 windows

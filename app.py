@@ -24,6 +24,7 @@ from library import __author__
 
 import traceback
 import datetime
+import random
 import numpy
 import time
 import json
@@ -59,6 +60,12 @@ DEBUG = config['debug']
 #
 
 if DEBUG :
+	# Lock random
+	random.seed(63130192)
+
+	# Set testing image for debug mode
+	FILE_CAPTURE = 'profile.png'
+
 	# Enable camera preview
 	config['camera']['preview']['enable'] = True
 	config['camera']['preview']['fullscreen'] = False
@@ -151,7 +158,7 @@ running = False
 #
 
 def detect_face () :
-	print(f'Thread : {datetime.datetime.now()} : capture + detection')
+	# print(f'Thread : {datetime.datetime.now()} : capture + detection')
 
 	# Set global variables
 	global app_detector
@@ -166,7 +173,8 @@ def detect_face () :
 		return
 
 	# Capture the image
-	app_camera.capture(filename = FILE_CAPTURE)
+	if not DEBUG :
+		app_camera.capture(filename = FILE_CAPTURE)
 
 	# Load the captured image
 	image = load_image(filename = FILE_CAPTURE, grayscale = False)
@@ -181,8 +189,8 @@ def detect_face () :
 	bbox = app_detector.detect_face(image = image)
 
 	# Display faces if debug mode
-	if DEBUG :
-		display_bbox(image = image, bounding_box = bbox, location = bbox_location)
+	#if DEBUG :
+	#	display_bbox(image = image, bounding_box = bbox, location = bbox_location)
 
 	# Print detection information
 	print(f'Thread : {datetime.datetime.now()} : capture + detection -> {len(bbox)} face(s) detected')
@@ -205,7 +213,7 @@ def detect_face () :
 #
 
 def apply_filters () :
-	# print(f'Thread : {datetime.datetime.now()} : filter')
+	print(f'Thread : {datetime.datetime.now()} : filter')
 
 	# Set global variables
 	global running
@@ -263,6 +271,7 @@ def main () :
 	# Set global variables
 	global app_manager
 	global app_window
+	global app_camera
 	global running
 	global last_filter
 	global last_face
@@ -284,6 +293,16 @@ def main () :
 
 	BL = (    0, win_h)
 	BR = (win_w, win_h)
+
+	# Start camera preview
+	#app_camera.start_preview()
+
+	# Sleep for a few seconds
+	#time.sleep(2)
+
+	# First detector + filter run
+	detect_face()
+	apply_filters()
 
 	try :
 		# Check close requesed
@@ -363,11 +382,17 @@ def main () :
 		save_image(filename = FILE_FACE, image = last_face)
 
 	# Delete temporary files
-	if os.path.exists(FILE_CAPTURE) :
+	if os.path.exists(FILE_CAPTURE) and not DEBUG :
 		os.remove(FILE_CAPTURE)
 
 	if os.path.exists(FILE_FILTER) :
 		os.remove(FILE_FILTER)
+
+	if os.path.exists(FILE_FACE) :
+		os.remove(FILE_FACE)
+
+	if os.path.exists(TMP_DIR) :
+		os.rmdir(TMP_DIR)
 
 	# Stop any devices running
 	app_manager.stop()

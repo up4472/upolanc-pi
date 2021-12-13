@@ -42,7 +42,7 @@ class TwitterAPI :
 
 		self.tweets.append(tweet)
 
-		return tweet.get_id()
+		return tweet.id
 
 	#
 	# Update the status of all the tweets
@@ -68,8 +68,8 @@ class TwitterAPI :
 
 		for tweet in self.tweets :
 			if not tweet.has_activity() :
-				if tweet.get_age() > limit :
-					self.api.destroy_status(id = tweet.get_id())
+				if tweet.age_in_seconds() > limit :
+					self.api.destroy_status(id = tweet.id)
 				else :
 					tweets.append(tweet)
 

@@ -33,40 +33,12 @@ class TwitterPost :
 	# Returns true if this tweet has any retweets or likes, false otherwise
 	#
 
-	def activity (self) -> bool :
+	def has_activity (self) -> bool :
 		return self.retweets > 0 or self.likes > 0
-
-	#
-	# Returns the number of retweets
-	#
-
-	def retweets (self) -> int :
-		return self.retweets
-
-	#
-	# Returns the number of likes
-	#
-
-	def likes (self) -> int :
-		return self.likes
-
-	#
-	# Returns the status of the tweet
-	#
-
-	def status (self) -> Status :
-		return self.status
 
 	#
 	# Returns the age of the tweet in seconds
 	#
 
-	def age (self) -> int :
+	def age_in_seconds (self) -> int :
 		return round(self.age.total_seconds())
-
-	#
-	# Returns the id of the tweet
-	#
-
-	def id (self) -> int :
-		return self.id

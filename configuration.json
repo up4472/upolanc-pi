@@ -1,15 +1,15 @@
 {
-	"debug" : false,
+	"debug" : true,
 
 	"countdown" : 15,
-	"run_capture" : 2,
+	"run_capture" : 3,
 	"run_filters" : 0,
 
 	"camera" : {
 		"width" : 1280,
-		"height" : 960,
+		"height" : 720,
 		"framerate" : 30,
-		"iso" : 1600,
+		"iso" : 200,
 		"rotation" : 180,
 		"preview" : {
 			"enable" : false,
@@ -28,7 +28,7 @@
 		"font-family" : "Consolas",
 		"font-size" : 32,
 		"fullscreen" : false,
-		"mode" : 2
+		"mode" : 0
 	},
 
 	"detector" : {
@@ -50,8 +50,7 @@
 	},
 
 	"filter" : {
-		"method" : "random",
-		"recolor_probability" : 0.5
+		"method" : "random"
 	},
 
 	"api" : {

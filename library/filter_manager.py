@@ -19,7 +19,6 @@ class FilterManager :
 	#
 
 	def __init__ (self, config : dict) -> None :
-		self.recolor_probability = config['recolor_probability']
 		self.method = config['method']
 		self.filter = 0
 		self.filters = 34
@@ -49,6 +48,7 @@ class FilterManager :
 
 		def private_method (data : numpy.ndarray) -> numpy.ndarray :
 			self.select_filter()
+			print(f'Selected filter : {self.filter}')
 
 			data = self.apply_rgb565_filter(image = data, color = color)
 
