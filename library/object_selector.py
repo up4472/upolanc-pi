@@ -1,6 +1,10 @@
 from library.methods_math import compute_distance
 from library.methods_math import clamp
 
+from typing import List
+from typing import Dict
+from typing import Any
+
 import random
 import numpy
 
@@ -10,7 +14,7 @@ class FaceSelector :
 	# Creates a new face detector object with the given configuration dictionary
 	#
 
-	def __init__ (self, config : dict) -> None :
+	def __init__ (self, config : Dict[str, Any]) -> None :
 		self.distance = config['bbox_distance']
 		self.method = config['method']
 		self.factor = config['bbox_resize']
@@ -20,7 +24,7 @@ class FaceSelector :
 	# Select a bounding box based on the method type defined in the initialization
 	#
 
-	def select_bbox (self, bounding_box : list) -> list :
+	def select_bbox (self, bounding_box : List[int]) -> list :
 		if len(bounding_box) == 1 :
 			return numpy.array(bounding_box[0]).flatten()
 
@@ -56,7 +60,7 @@ class FaceSelector :
 	# Crop the bounding box from the image
 	#
 
-	def crop_image (self, image : numpy.ndarray, bounding_box : list) -> numpy.ndarray :
+	def crop_image (self, image : numpy.ndarray, bounding_box : List[int]) -> numpy.ndarray :
 		x = bounding_box[0] - 0.5 * (self.factor - 1) * bounding_box[2]
 		y = bounding_box[1] - 0.5 * (self.factor - 1) * bounding_box[3]
 		w = bounding_box[2] * self.factor
@@ -84,5 +88,5 @@ class FaceSelector :
 	# Update the last used bounding box
 	#
 
-	def update_location (self, bounding_box : list) -> None :
+	def update_location (self, bounding_box : List[int]) -> None :
 		self.location = bounding_box

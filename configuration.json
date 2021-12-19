@@ -55,6 +55,8 @@
 
 	"api" : {
 		"caption" : "This tweet was created automaticaly as part of the Raspberry Pi port of the project '15 seconds of fame'.",
+		"username" : "code4180",
+		"qrcode" : true,
 		"verify" : true,
 		"enable" : false
 	}

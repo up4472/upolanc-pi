@@ -1,5 +1,9 @@
 from library.methods_cv import load_haar
 
+from typing import Dict
+from typing import List
+from typing import Any
+
 import numpy
 
 class FaceDetector :
@@ -8,7 +12,7 @@ class FaceDetector :
 	# Creates a new face detector object with the given configuration dictionary
 	#
 
-	def __init__ (self, config : dict) -> None :
+	def __init__ (self, config : Dict[str, Any]) -> None :
 		self.name = config['model']
 		self.detector = None
 
@@ -21,7 +25,7 @@ class FaceDetector :
 	# Runs the face detector algorithm on the given image
 	#
 
-	def detect_face (self, image : numpy.ndarray) -> list :
+	def detect_face (self, image : numpy.ndarray) -> List[int] :
 		bbox = []
 
 		if self.name == 'haar' :

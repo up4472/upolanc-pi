@@ -1,6 +1,8 @@
+from typing import Tuple
+from typing import List
+
 import numpy
 import copy
-import time
 import cv2
 import os
 
@@ -17,7 +19,7 @@ def load_haar (filename : str) -> cv2.CascadeClassifier :
 # Display the bouding boxes of the detected faces on the given image
 #
 
-def display_bbox (image : numpy.ndarray, bounding_box : list, location : list) -> None :
+def display_bbox (image : numpy.ndarray, bounding_box : List[int], location : Tuple[int, int, int, int]) -> None :
 	xloc = location[0]
 	yloc = location[1]
 	wloc = location[2]

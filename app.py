@@ -1,5 +1,7 @@
 import os
 
+from library.methods_io import dir_delete, file_delete
+
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
@@ -92,6 +94,7 @@ if DEBUG :
 
 	# Disable twitter api
 	config['api']['enable'] = False
+	config['api']['qrcode'] = True
 
 #
 # Define time constants
@@ -145,7 +148,7 @@ bbox_location = [
 last_capture = None
 last_filter = []
 last_face = None
-last_id = 0
+last_id = 'N/A'
 
 #
 # The running flag
@@ -177,7 +180,7 @@ def detect_face () :
 		app_camera.capture(filename = FILE_CAPTURE)
 
 	# Load the captured image
-	image = load_image(filename = FILE_CAPTURE, grayscale = False)
+	image = load_image(filename = FILE_CAPTURE)
 
 	# Downscale the captured image
 	size = max(numpy.shape(image))
@@ -187,10 +190,6 @@ def detect_face () :
 
 	# Detect faces from the loaded image
 	bbox = app_detector.detect_face(image = image)
-
-	# Display faces if debug mode
-	#if DEBUG :
-	#	display_bbox(image = image, bounding_box = bbox, location = bbox_location)
 
 	# Print detection information
 	print(f'Thread : {datetime.datetime.now()} : capture + detection -> {len(bbox)} face(s) detected')
@@ -228,7 +227,7 @@ def apply_filters () :
 		return
 
 	# Aplly the filter to the image in RGB565 format
-	last_filter = app_filter.apply_rgb565_filters(image = last_face, color = None)
+	last_filter = app_filter.apply_filters(image = last_face, color = None)
 
 	# Save the first image
 	save_image(filename = FILE_FILTER, image = last_filter[0])
@@ -279,7 +278,7 @@ def main () :
 
 	# Load last face if it exists
 	if os.path.exists(FILE_FACE) :
-		last_face = load_image(filename = FILE_FACE, grayscale = False)
+		last_face = load_image(filename = FILE_FACE)
 
 	# Start the application
 	timer = COUNTDOWN_TIMER
@@ -293,12 +292,6 @@ def main () :
 
 	BL = (    0, win_h)
 	BR = (win_w, win_h)
-
-	# Start camera preview
-	#app_camera.start_preview()
-
-	# Sleep for a few seconds
-	#time.sleep(2)
 
 	# First detector + filter run
 	detect_face()
@@ -326,15 +319,18 @@ def main () :
 			if len(last_filter) > 0 :
 				app_window.render_images(images = last_filter)
 
-			# Create render text
-			text_time = str(timer).rjust(2, '0')
-			text_tpid = str(last_id)
-
+			# Set strings
+			timer_str = str(timer).rjust(2, '0')
+			qcode_str = str(last_id)
+	
 			# Render timer
-			app_window.render_text(text = text_time, location = BL, color = (255, 255, 255))
+			app_window.render_text(text = timer_str, location = BL)
 
 			# Render last tweet id
-			app_window.render_text(text = text_tpid, location = BR, color = (255, 255, 255))
+			if config['api']['qrcode'] :
+				app_window.render_qrcode(text = qcode_str, location = BR)
+			else :
+				app_window.render_text(text = qcode_str, location = BR)
 
 			# Update the window to display the image
 			app_window.update()
@@ -377,22 +373,13 @@ def main () :
 	# FIXME when DEBUG is true display_bbox seem to prevent from exiting the application
 	destroy_all_windows()
 
-	# Save last face
-	if last_face is not None :
-		save_image(filename = FILE_FACE, image = last_face)
-
 	# Delete temporary files
-	if os.path.exists(FILE_CAPTURE) and not DEBUG :
-		os.remove(FILE_CAPTURE)
+	if not DEBUG :
+		file_delete(FILE_CAPTURE)
 
-	if os.path.exists(FILE_FILTER) :
-		os.remove(FILE_FILTER)
-
-	if os.path.exists(FILE_FACE) :
-		os.remove(FILE_FACE)
-
-	if os.path.exists(TMP_DIR) :
-		os.rmdir(TMP_DIR)
+	file_delete(FILE_FILTER)
+	file_delete(FILE_FACE)
+	dir_delete(TMP_DIR)
 
 	# Stop any devices running
 	app_manager.stop()

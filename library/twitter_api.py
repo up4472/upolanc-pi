@@ -2,6 +2,8 @@ from library.twitter_post import TwitterPost
 
 from tweepy import OAuthHandler
 from tweepy import API
+from typing import Dict
+from typing import Any
 
 class TwitterAPI :
 
@@ -9,11 +11,14 @@ class TwitterAPI :
 	# Create a twitter api object with the given configuration and credentials dictionary
 	#
 
-	def __init__ (self, config : dict, credentials : dict) -> None :
+	def __init__ (self, config : Dict[str, Any], credentials : Dict[str, Any]) -> None :
 		auth = OAuthHandler(credentials['consumer_key'], credentials['consumer_secret'])
 		auth.set_access_token(credentials['access_token'], credentials['access_token_secret'])
 
 		self.api = API(auth)
+
+		self.username = config['username']
+		self.qrcode = config['qrcode']
 
 		self.enable = config['enable']
 		self.caption = config['caption']
@@ -30,9 +35,12 @@ class TwitterAPI :
 	# Creates a new tweet with the media located at the specified filename and the given caption
 	#
 
-	def post_media (self, filename : str, caption : str = None) -> int :
+	def post_media (self, filename : str, caption : str = None) -> str :
 		if not self.enable :
-			return 0
+			if self.qrcode :
+				return f'https://twitter.com/{self.username}'
+			else :
+				return 'N/A'
 
 		if caption is None :
 			caption = self.caption
@@ -42,7 +50,10 @@ class TwitterAPI :
 
 		self.tweets.append(tweet)
 
-		return tweet.id
+		if self.qrcode :
+			return f'https://twitter.com/{self.username}/status/{tweet.id}'
+		else :
+			return str(tweet.id)
 
 	#
 	# Update the status of all the tweets

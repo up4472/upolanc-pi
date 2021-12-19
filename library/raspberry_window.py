@@ -1,4 +1,10 @@
+from typing import Tuple
+from typing import List
+from typing import Dict
+from typing import Any
+
 import pygame
+import qrcode
 import numpy
 import copy
 
@@ -8,7 +14,7 @@ class RaspberryWindow :
 	# Creates a new raspberry window object with the given configuration dictionary
 	#
 
-	def __init__ (self, config : dict) -> None :
+	def __init__ (self, config : Dict[str, Any]) -> None :
 		pygame.init()
 		pygame.font.init()
 
@@ -26,7 +32,7 @@ class RaspberryWindow :
 	# Fills the window with black color
 	#
 
-	def clean (self, color : tuple = None) -> None :
+	def clean (self, color : Tuple[int, int, int] = None) -> None :
 		if color is None :
 			color = (0, 0, 0)
 
@@ -36,8 +42,8 @@ class RaspberryWindow :
 	# Render the images in a grid type format (1x1, 1x2, 2x2, 2x4)
 	#
 
-	def render_images (self, images : numpy.ndarray) -> None :
-		def process_mode (images : list) :
+	def render_images (self, images : List[numpy.ndarray]) -> None :
+		def process_mode (images : List[numpy.ndarray]) :
 			if self.mode == 0 :
 				w, h = self.resolution()
 
@@ -62,7 +68,7 @@ class RaspberryWindow :
 
 			return images + mirrored
 
-		def process_images (images : list, win_w : int, win_h : int) :
+		def process_images (images : List[pygame.Surface], win_w : int, win_h : int) :
 			if len(images) == 2 :
 				win_w = win_w / 2
 
@@ -117,10 +123,10 @@ class RaspberryWindow :
 				locations[2] = [loc_x +     pad_w        , loc_y - pad_h + win_h]
 				locations[3] = [loc_x + 2 * pad_w + win_w, loc_y - pad_h + win_h]
 
-				locations[4] = [loc_x -     pad_w + 2 * win_w, loc_y + pad_h]
-				locations[5] = [loc_x - 2 * pad_w + 3 * win_w, loc_y + pad_h]
-				locations[6] = [loc_x -     pad_w + 2 * win_w, loc_y - pad_h + win_h]
-				locations[7] = [loc_x - 2 * pad_w + 3 * win_w, loc_y - pad_h + win_h]
+				locations[5] = [loc_x -     pad_w + 2 * win_w, loc_y + pad_h]
+				locations[4] = [loc_x - 2 * pad_w + 3 * win_w, loc_y + pad_h]
+				locations[7] = [loc_x -     pad_w + 2 * win_w, loc_y - pad_h + win_h]
+				locations[6] = [loc_x - 2 * pad_w + 3 * win_w, loc_y - pad_h + win_h]
 
 			return images, locations
 
@@ -132,11 +138,33 @@ class RaspberryWindow :
 		for image, location in zip(images, locations) :
 			self.window.blit(image, location)
 
+	def render_qrcode (self, text : str, location : Tuple[int, int]) -> None :
+		qr = qrcode.QRCode(version = 1, box_size = 2, border = 1)
+		qr.add_data(text)
+		qr.make(fit = True)
+
+		qr.make_image(fill = 'black', back_color = 'white').save('qrcode.png')
+
+		image = pygame.image.load('qrcode.png')
+
+		win_w, win_h = self.resolution()
+		loc_w, loc_h = location
+
+		image_w = image.get_width()
+		image_h = image.get_height()
+
+		w = max(0, min(loc_w, win_w - image_w - 1))
+		h = max(0, min(loc_h, win_h - image_h - 1))
+
+		self.window.blit(image, (w, h))
+
 	#
 	# Render the counter
 	#
 
-	def render_text (self, text : str, location : tuple, color : tuple = (255, 255, 255)) -> None :
+	def render_text (self, text : str, location : Tuple[int, int], color : Tuple[int, int, int] = None) -> None :
+		if color is None : color = (255, 255, 255)
+
 		text = self.font.render(text, False, color)
 
 		win_w, win_h = self.resolution()
@@ -145,8 +173,8 @@ class RaspberryWindow :
 		text_w = text.get_width()
 		text_h = text.get_height()
 
-		w = max(0, min(loc_w, win_w - text_w))
-		h = max(0, min(loc_h, win_h - text_h))
+		w = max(0, min(loc_w, win_w - text_w - 1))
+		h = max(0, min(loc_h, win_h - text_h - 1))
 
 		self.window.blit(text, (w, h))
 

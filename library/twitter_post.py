@@ -17,6 +17,7 @@ class TwitterPost :
 		self.id = self.status.id
 
 		self.age = datetime.now(timezone.utc) - self.status.created_at
+
 	#
 	# Update the twitter information with the given api
 	#

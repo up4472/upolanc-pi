@@ -1,272 +1,154 @@
-from library.methods_color import create_rgb565
-from library.methods_color import create_rgba
-from library.methods_color import hsv_2_rgb
-from library.methods_color import rgb_2_hsv
-from library.methods_color import rgb_value
-from library.methods_color import rgb565_r
-from library.methods_color import rgb565_g
-from library.methods_color import rgb565_b
-from library.methods_color import rgba_r
-from library.methods_color import rgba_g
-from library.methods_color import rgba_b
-from library.methods_color import clamp_color_0_255
+from library.methods_color import rgb_to_hls
+from library.methods_color import hls_to_rgb
+from library.methods_color import rgb_to_l
+from library.methods_math import clamp0255
 from library.methods_math import clamp
+
+from typing import Tuple
+from typing import List
 
 import random
 import numpy
-import math
+import cv2
 
-#
-#
-#
+def f1 (i : int) -> float :
+	return 0.667 * (1 - ((float(i) - 127.0) / 127.0) ** 2)
 
-def color_balance_init (red : int, green : int, blue : int, shadows : numpy.ndarray) -> list :
-	def private_method (index : int, value : int) -> int :
-		val = shadows[index] if value > 0 else shadows[255 - index]
-		val = index + index * val
+def f2 (i : int) -> float :
+	return 1.075 - 1 / (float(i) / 16.0 + 1)
 
-		return clamp_color_0_255(val)
+SHADOW_ADD = numpy.array([f1(i) for i in range(256)], dtype = float)
+SHADOW_SUB = numpy.array([f2(i) for i in range(255, -1, -1)], dtype = float)
 
-	rlut = [private_method(index = index, value = red) for index in range(256)]
-	glut = [private_method(index = index, value = green) for index in range(256)]
-	blut = [private_method(index = index, value = blue) for index in range(256)]
+def color_balance (image : numpy.ndarray, cr : int, mg : int, yb : int) -> numpy.ndarray :
+	global SHADOW_ADD
+	global SHADOW_SUB
 
-	return rlut, glut, blut
+	crt = numpy.array([SHADOW_ADD[i] if cr > 0 else SHADOW_SUB[255 - i] for i in range(256)], dtype = float)
+	mgt = numpy.array([SHADOW_ADD[i] if mg > 0 else SHADOW_SUB[255 - i] for i in range(256)], dtype = float)
+	ybt = numpy.array([SHADOW_ADD[i] if yb > 0 else SHADOW_SUB[255 - i] for i in range(256)], dtype = float)
 
-#
-# Applies the rgb565 filter to the given image
-#
+	rlut = numpy.array([clamp0255(i + cr * crt[i]) for i in range(256)], dtype = numpy.uint8)
+	glut = numpy.array([clamp0255(i + mg * mgt[i]) for i in range(256)], dtype = numpy.uint8)
+	blut = numpy.array([clamp0255(i + yb * ybt[i]) for i in range(256)], dtype = numpy.uint8)
 
-def color_balance_process_rgb565 (image : numpy.ndarray, rlut : list, glut : list, blut : list) -> numpy.ndarray :
-	def private_method (element : int) -> int :
-		r = rgb565_r(color = element)
-		g = rgb565_g(color = element)
-		b = rgb565_b(color = element)
+	width = numpy.size(image, axis = 1)
+	height = numpy.size(image, axis = 0)
 
-		v = rgb_value(red = r, green = g, blue = b)
+	for hi in range(height) :
+		for wi in range(width) :
+			r = image[hi, wi, 2]
+			g = image[hi, wi, 1]
+			b = image[hi, wi, 0]
 
-		r = rlut[r]
-		g = glut[g]
-		b = blut[b]
+			r_n = rlut[r]
+			g_n = glut[g]
+			b_n = blut[b]
 
-		h, s, _ = rgb_2_hsv(red = r, green = g, blue = b)
-		r, g, b = hsv_2_rgb(hue = h, saturation = s, value = v)
+			r_n, g_n, b_n = rgb_to_hls(r_n, g_n, b_n)
+			g_n = rgb_to_l(r, g, b)
+			r_n, g_n, b_n = hls_to_rgb(r_n, g_n, b_n)
 
-		r = int(round(r))
-		g = int(round(g))
-		b = int(round(b))
+			image[hi, wi, 2] = r_n
+			image[hi, wi, 1] = g_n
+			image[hi, wi, 0] = b_n
 
-		return create_rgb565(red = r, green = g, blue = b)
+	return image.astype(numpy.uint8)
 
-	return numpy.vectorize(private_method)(image)
+def hue_saturation (image : numpy.ndarray, v1 : int, v2 : int, v3 : int) -> numpy.ndarray :
+	def f1 (i : int, value : float) -> float :
+		if i + value < 0 : return 255 + i + value
+		if i + value > 255 : return i + value - 255
 
-#
-# Applies the rgba filter to the given image
-#
+		return i + value
 
-def color_balance_process_rgba (image : numpy.ndarray, rlut : list, glut : list, blut : list) -> numpy.ndarray :
-	def private_method (element : int) -> int :
-		r = rgba_r(color = element)
-		g = rgba_g(color = element)
-		b = rgba_b(color = element)
+	def f2 (i : int, value : float) -> int :
+		value = clamp(value, -255, 255)
 
-		v = rgb_value(red = r, green = g, blue = b)
+		if value < 0 : value = (i * (255 + value)) / 255
+		else : value = (i + ((255 - i) * value) / 255)
 
-		r = rlut[r]
-		g = glut[g]
-		b = blut[b]
+		return int(value)
 
-		h, s, _ = rgb_2_hsv(red = r, green = g, blue = b)
-		r, g, b = hsv_2_rgb(hue = h, saturation = s, value = v)
+	def f3 (i : int, value : float) -> float :
+		value = clamp(value, -255, 255)
+		value = clamp0255((i * (255 + value)) / 255)
 
-		r = int(round(r))
-		g = int(round(g))
-		b = int(round(b))
+		return value
 
-		return create_rgba(red = r, green = g, blue = b)
+	htl = numpy.array([f1(i, v1 * 255.0 / 360.0) for i in range(256)], dtype = float)
+	ltl = numpy.array([f2(i, v2 * 127.0 / 100.0) for i in range(256)], dtype = numpy.uint8)
+	stl = numpy.array([f3(i, v3 * 255.0 / 360.0) for i in range(256)], dtype = float)
 
-	return numpy.vectorize(private_method)(image)
+	width = numpy.size(image, axis = 1)
+	height = numpy.size(image, axis = 0)
 
-#
-#
-#
+	for hi in range(height) :
+		for wi in range(width) :
+			r = image[hi, wi, 2]
+			g = image[hi, wi, 1]
+			b = image[hi, wi, 0]
 
-def lut_init (levels : int) -> list :
-	def private_method (index : int) -> float :
-			value = index / 255.0
-			value = int(round(value * (levels - 1.0)) / (levels - 1.0))
-			value = 255.0 * value + 0.5
+			h, l, s = rgb_to_hls(r, g, b)
 
-			return clamp_color_0_255(value)
+			h = htl[int(h)]
+			l = ltl[int(l)]
+			s = stl[int(s)]
 
-	return [private_method(index = index) for index in range(256)]
+			r, g, b = hls_to_rgb(h, l, s)
 
-#
-# Applies the rgb565 filter to the given image
-#
+			image[hi, wi, 2] = r
+			image[hi, wi, 1] = g
+			image[hi, wi, 0] = b
 
-def lut_process_rgb565 (image : numpy.ndarray, lut : list) -> numpy.ndarray :
-	def private_method (pixel : int) -> int :
-		r = lut[rgb565_r(color = pixel)]
-		g = lut[rgb565_g(color = pixel)]
-		b = lut[rgb565_b(color = pixel)]
+	return image.astype(numpy.uint8)
 
-		r = int(round(r))
-		g = int(round(g))
-		b = int(round(b))
+def posterize (image : numpy.ndarray, levels : int) -> numpy.ndarray :
+	x = numpy.arange(256)
 
-		return create_rgb565(red = r, green = g, blue = b)
+	ibins = numpy.linspace(0, 255, levels + 1)
+	obins = numpy.linspace(0, 255, levels)
 
-	return numpy.vectorize(private_method)(image)
+	label = numpy.digitize(x, ibins) - 1
+	label[255] = levels - 1
 
-#
-# Applies the rgba filter to the given image
-#
+	y = numpy.array(obins[label], dtype = int)
 
-def lut_process_rgb565 (image : numpy.ndarray, lut : list) -> numpy.ndarray :
-	def private_method (pixel : int) -> int :
-		r = lut[rgba_r(color = pixel)]
-		g = lut[rgba_g(color = pixel)]
-		b = lut[rgba_b(color = pixel)]
+	image = cv2.LUT(image, y, image)
 
-		r = int(round(r))
-		g = int(round(g))
-		b = int(round(b))
+	return image.astype(numpy.uint8)
 
-		return create_rgba(red = r, green = g, blue = b)
-
-	return numpy.vectorize(private_method)(image)
-
-#
-#
-#
-
-def hue_saturation_init (hue : int, saturation : int, value : int) -> list :
-	def compute_hue (index : int) -> float :
-		color = hue * 255.0 / 360.0
-
-		if index + color <   0 : return index + color + 255
-		if index + color > 255 : return index + color - 255
-
-		return index + color
-
-	def compute_sat (index : int) -> float :
-		color = saturation * 255.0 / 100.0
-		color = clamp(color, -255, 255)
-
-		return clamp_color_0_255(index * (255 + color) / 255)
-	
-	def compute_val (index : int) -> float :
-		color = value * 127.0 / 100.0
-		color = clamp(color, -255, 255)
-
-		if color < 0 :
-			return index * (255 + color) / 255
-
-		return index + ((255 - index) * color) / 255
-
-	lhue = [compute_hue(index = index) for index in range(256)]
-	lsat = [compute_sat(index = index) for index in range(256)]
-	lval = [compute_val(index = index) for index in range(256)]
-
-	return lhue, lsat, lval
-
-#
-# Applies the rgb565 filter to the given image
-#
-
-def hue_saturation_process_rgb565  (image : numpy.ndarray, hue : list, saturation : list, value : list) -> numpy.ndarray :
-	def private_method (pixel : int) -> int :
-		r = rgb565_r(color = pixel)
-		g = rgb565_g(color = pixel)
-		b = rgb565_b(color = pixel)
-
-		h, s, v = rgb_2_hsv(red = r, green = g, blue = b)
-
-		h = hue[h]
-		s = saturation[s]
-		v = value[v]
-
-		r, g, b = hsv_2_rgb(hue = h, saturation = s, value = v)
-
-		return create_rgb565(red = r, green = g, blue = b)
-
-	return numpy.vectorize(private_method)(image)
-
-#
-# Applies the rgba filter to the given image
-#
-
-def hue_saturation_process_rgba  (image : numpy.ndarray, hue : list, saturation : list, value : list) -> numpy.ndarray :
-	def private_method (pixel : int) -> int :
-		r = rgba_r(color = pixel)
-		g = rgba_g(color = pixel)
-		b = rgba_b(color = pixel)
-
-		h, s, v = rgb_2_hsv(red = r, green = g, blue = b)
-
-		h = hue[h]
-		s = saturation[s]
-		v = value[v]
-
-		r, g, b = hsv_2_rgb(hue = h, saturation = s, value = v)
-
-		return create_rgba(red = r, green = g, blue = b)
-
-	return numpy.vectorize(private_method)(image)
-
-#
-# Applies the rgb565 recoloring to the image
-#
-
-def apply_rgb565_recoloring (image : numpy.ndarray, color : list = None, location : tuple = None) -> numpy.ndarray :
+def recoloring (image : numpy.ndarray, color : List[int] = None, location : Tuple[int, int] = None) -> numpy.ndarray :
 	if color is None :
 		r = random.randrange(0, 256)
 		g = random.randrange(0, 256)
 		b = random.randrange(0, 256)
 	else :
-		r = clamp_color_0_255(color[0])
-		g = clamp_color_0_255(color[1])
-		b = clamp_color_0_255(color[2])
+		r = clamp0255(color[0])
+		g = clamp0255(color[1])
+		b = clamp0255(color[2])
 
 	if location is None :
-		x = random.randrange(0, numpy.size(image, axis = 0))
-		y = random.randrange(0, numpy.size(image, axis = 1))
+		x = random.randrange(0, numpy.size(image, axis = 1))
+		y = random.randrange(0, numpy.size(image, axis = 0))
 	else :
-		x = clamp(location[0], 0, numpy.size(image, axis = 0))
-		y = clamp(location[1], 0, numpy.size(image, axis = 1))
+		x = clamp(location[0], 0, numpy.size(image, axis = 1))
+		y = clamp(location[1], 0, numpy.size(image, axis = 0))
 
-	old_color = image[x, y]
-	new_color = create_rgb565(red = r, green = g, blue = b)
+	width = numpy.size(image, axis = 1)
+	height = numpy.size(image, axis = 0)
 
-	image[image == old_color] = new_color
+	for hi in range(height) :
+		for wi in range(width) :
+			if image[hi, wi, 0] != image[x, y, 0] :
+				continue
+			if image[hi, wi, 1] != image[x, y, 1] :
+				continue
+			if image[hi, wi, 2] != image[x, y, 2] :
+				continue
 
-	return image
+			image[hi, wi, 2] = r
+			image[hi, wi, 1] = g
+			image[hi, wi, 0] = b
 
-#
-# Applies the rgba recoloring to the image
-#
-
-def apply_rgba_recoloring (image : numpy.ndarray, color : list = None, location : tuple = None) -> numpy.ndarray :
-	if color is None :
-		r = random.randrange(0, 256)
-		g = random.randrange(0, 256)
-		b = random.randrange(0, 256)
-	else :
-		r = clamp_color_0_255(color[0])
-		g = clamp_color_0_255(color[1])
-		b = clamp_color_0_255(color[2])
-
-	if location is None :
-		x = random.randrange(0, numpy.size(image, axis = 0))
-		y = random.randrange(0, numpy.size(image, axis = 1))
-	else :
-		x = clamp(location[0], 0, numpy.size(image, axis = 0))
-		y = clamp(location[1], 0, numpy.size(image, axis = 1))
-
-	old_color = image[x, y]
-	new_color = create_rgba(red = r, green = g, blue = b)
-
-	image[image == old_color] = new_color
-
-	return image
+	return image.astype(numpy.uint8)

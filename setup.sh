@@ -15,3 +15,6 @@ sudo pip3 install tweepy
 
 echo 'Installing package [cv2] ...'
 sudo pip3 install opencv-python
+
+echo 'Installing package [qrcode] ...'
+sudo pip3 install qrcode

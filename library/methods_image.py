@@ -5,13 +5,8 @@ import cv2
 # Load the image data
 #
 
-def load_image (filename : str, grayscale : bool = False) -> numpy.ndarray :
-	image = cv2.imread(filename = filename)
-
-	if grayscale :
-		image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-	return image
+def load_image (filename : str) -> numpy.ndarray :
+	return cv2.imread(filename = filename)
 #
 # Resize the image to the desired shape
 #

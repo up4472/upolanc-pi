@@ -1,3 +1,6 @@
+from typing import Dict
+from typing import Any
+
 import json
 import os
 
@@ -20,7 +23,7 @@ def file_delete (filename : str) -> None :
 # Load a json file into a dictionary object
 #
 
-def load_json (filename : str) -> dict :
+def load_json (filename : str) -> Dict[str, Any] :
 	if file_exists(filename = filename) :
 		with open(filename, 'r') as file :
 			return json.load(file)

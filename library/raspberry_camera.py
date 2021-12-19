@@ -1,12 +1,15 @@
 from picamera import PiCamera
 
+from typing import Dict
+from typing import Any
+
 class RaspberryCamera :
 
 	#
 	# Creates a new raspberry camera object with the given configuration dictionary
 	#
 
-	def __init__ (self, config : dict) -> None :
+	def __init__ (self, config : Dict[str, Any]) -> None :
 		self.width = config['width']
 		self.height = config['height']
 
